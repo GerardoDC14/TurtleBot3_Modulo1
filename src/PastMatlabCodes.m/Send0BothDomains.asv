@@ -1,0 +1,52 @@
+clear all;
+clc;
+
+% Set the ROS 2 domain ID to 0 for Robot 1 (and subscriptions from Domain 0)
+setenv('ROS_DOMAIN_ID', '0');
+
+% Create a ROS 2 node in Domain 0
+node1 = ros2node('/robot1_node');
+
+% Create a publisher for the first robot (/cmd_vel topic)
+cmdVelPub1 = ros2publisher(node1, '/cmd_vel', 'geometry_msgs/Twist');
+msg1 = ros2message(cmdVelPub1); % Twist message for the first robot
+
+% --- Switch to Domain 1 for Robot 2 ---
+setenv('ROS_DOMAIN_ID', '1');
+
+% Create a ROS 2 node for Robot 2 in Domain 1
+node2 = ros2node('/robot2_node');
+
+% Create a publisher for the second robot (/tb3_1/cmd_vel topic)
+cmdVelPub2 = ros2publisher(node2, '/cmd_vel', 'geometry_msgs/Twist');
+msg2 = ros2message(cmdVelPub2); % Twist message for the second robot
+
+% Set linear and angular velocity values for both robots
+linear_velocity_robot1 = 0.0;  % Linear velocity in m/s for Robot 1
+angular_velocity_robot1 = 0.0; % Angular velocity in rad/s for Robot 1
+
+linear_velocity_robot2 = 0.0; % Linear velocity in m/s for Robot 2
+angular_velocity_robot2 = 0.0; % Angular velocity in rad/s for Robot 2
+
+% Set the velocities for Robot 1
+msg1.linear.x = linear_velocity_robot1;   % Set linear velocity
+msg1.angular.z = angular_velocity_robot1; % Set angular velocity
+
+% Set the velocities for Robot 2
+msg2.linear.x = linear_velocity_robot2;   % Set linear velocity
+msg2.angular.z = angular_velocity_robot2; % Set angular velocity
+
+% Send velocity commands to both robots
+send(cmdVelPub1, msg1);  % Send velocity command to Robot 1
+send(cmdVelPub2, msg2);  % Send velocity command to Robot 2
+
+% Display messages indicating the velocities sent to each robot
+disp(['Robot 1: Linear Velocity = ', num2str(linear_velocity_robot1), ...
+      ', Angular Velocity = ', num2str(angular_velocity_robot1)]);
+
+disp(['Robot 2: Linear Velocity = ', num2str(linear_velocity_robot2), ...
+      ', Angular Velocity = ', num2str(angular_velocity_robot2)]);
+
+% Clean up: Clear nodes and publishers
+clear cmdVelPub1 cmdVelPub2 node1 node2;
+disp('Nodes and publishers cleared. Exiting.');

@@ -1,0 +1,21 @@
+running egg_info
+writing ../build/aruco_orientation/aruco_orientation.egg-info/PKG-INFO
+writing dependency_links to ../build/aruco_orientation/aruco_orientation.egg-info/dependency_links.txt
+writing entry points to ../build/aruco_orientation/aruco_orientation.egg-info/entry_points.txt
+writing requirements to ../build/aruco_orientation/aruco_orientation.egg-info/requires.txt
+writing top-level names to ../build/aruco_orientation/aruco_orientation.egg-info/top_level.txt
+reading manifest file '../build/aruco_orientation/aruco_orientation.egg-info/SOURCES.txt'
+writing manifest file '../build/aruco_orientation/aruco_orientation.egg-info/SOURCES.txt'
+running build
+running build_py
+copying aruco_orientation/odom_node.py -> /home/gerardo/ros2_ws/src/build/aruco_orientation/build/lib/aruco_orientation
+running install
+running install_lib
+copying /home/gerardo/ros2_ws/src/build/aruco_orientation/build/lib/aruco_orientation/odom_node.py -> /home/gerardo/ros2_ws/src/install/aruco_orientation/lib/python3.10/site-packages/aruco_orientation
+byte-compiling /home/gerardo/ros2_ws/src/install/aruco_orientation/lib/python3.10/site-packages/aruco_orientation/odom_node.py to odom_node.cpython-310.pyc
+running install_egg_info
+removing '/home/gerardo/ros2_ws/src/install/aruco_orientation/lib/python3.10/site-packages/aruco_orientation-0.0.0-py3.10.egg-info' (and everything under it)
+Copying ../build/aruco_orientation/aruco_orientation.egg-info to /home/gerardo/ros2_ws/src/install/aruco_orientation/lib/python3.10/site-packages/aruco_orientation-0.0.0-py3.10.egg-info
+running install_scripts
+Installing odom_node script to /home/gerardo/ros2_ws/src/install/aruco_orientation/lib/aruco_orientation
+writing list of installed files to '/home/gerardo/ros2_ws/src/build/aruco_orientation/install.log'

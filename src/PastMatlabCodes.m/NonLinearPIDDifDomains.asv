@@ -1,0 +1,245 @@
+clear all;
+clc;
+
+% Initialize ROS 2 environment and domain ID
+setenv('ROS_DOMAIN_ID', '0');
+
+% List ROS 2 topics to confirm connection
+topics = ros2('topic', 'list');
+disp('Available topics:');
+disp(topics);
+
+% Create a ROS 2 node
+node = ros2node('/matlab_node');
+
+% ------------------------ ROBOT 1 SETUP ------------------------
+% Create a publisher for the first robot (/tb3_6/cmd_vel topic)
+cmdVelPub1 = ros2publisher(node, '/tb3_6/cmd_vel', 'geometry_msgs/Twist');
+msg1 = ros2message(cmdVelPub1); % Twist message for the first robot
+
+% Subscribe to aruco_x and aruco_y topics for initial position of robot 1
+xArucoSub1 = ros2subscriber(node, '/aruco_x', 'std_msgs/Float32');
+yArucoSub1 = ros2subscriber(node, '/aruco_y', 'std_msgs/Float32');
+
+% Subscribe to odometry topic (/tb3_6/odom) for robot 1
+odomSub1 = ros2subscriber(node, '/tb3_6/odom', 'nav_msgs/Odometry');
+
+% Wait to receive the initial position from the aruco topics for robot 1
+disp('Waiting for initial position from /aruco_x and /aruco_y for Robot 1...');
+xArucoMsg1 = receive(xArucoSub1, 10);
+yArucoMsg1 = receive(yArucoSub1, 10);
+initial_x1 = double(xArucoMsg1.data);
+initial_y1 = double(yArucoMsg1.data);
+disp(['Robot 1 Initial Position: X = ', num2str(initial_x1), ', Y = ', num2str(initial_y1)]);
+
+% Define the image center coordinates for robot 1
+image_center_x1 = 0.27 * 4;
+image_center_y1 = 0.17;
+
+% Define the radius of the circular trajectory for robot 1
+circle_radius1 = 0.2;
+
+% Generate Circle Trajectory around the image center for robot 1
+num_samples = 800;  % Number of points to sample on the circle
+theta1 = linspace(0, 2*pi, num_samples);  % Angle range for the circle
+x_circle1 = image_center_x1 + circle_radius1 * cos(theta1);  % X coordinates
+y_circle1 = image_center_y1 + circle_radius1 * sin(theta1);  % Y coordinates
+
+% ------------------------ ROBOT 2 SETUP ------------------------
+% Create a publisher for the second robot (/cmd_vel topic)
+cmdVelPub2 = ros2publisher(node, '/cmd_vel', 'geometry_msgs/Twist');
+msg2 = ros2message(cmdVelPub2); % Twist message for the second robot
+
+% Subscribe to aruco1_x and aruco1_y topics for initial position of robot 2
+xArucoSub2 = ros2subscriber(node, '/aruco1_x', 'std_msgs/Float32');
+yArucoSub2 = ros2subscriber(node, '/aruco1_y', 'std_msgs/Float32');
+
+% Subscribe to odometry topic (/odom) for robot 2
+odomSub2 = ros2subscriber(node, '/odom', 'nav_msgs/Odometry');
+
+% Wait to receive the initial position from the aruco topics for robot 2
+disp('Waiting for initial position from /aruco1_x and /aruco1_y for Robot 2...');
+xArucoMsg2 = receive(xArucoSub2, 10);
+yArucoMsg2 = receive(yArucoSub2, 10);
+initial_x2 = double(xArucoMsg2.data);
+initial_y2 = double(yArucoMsg2.data);
+disp(['Robot 2 Initial Position: X = ', num2str(initial_x2), ', Y = ', num2str(initial_y2)]);
+
+% Define the image center coordinates for robot 2
+image_center_x2 = 0.27;  % Different center for robot 2
+image_center_y2 = 0.17;
+
+% Define the radius of the circular trajectory for robot 2
+circle_radius2 = 0.1;  % Smaller radius for robot 2
+
+% Generate Circle Trajectory around the image center for robot 2
+theta2 = linspace(0, 2*pi, num_samples);  % Angle range for the circle
+x_circle2 = image_center_x2 + circle_radius2 * cos(theta2);  % X coordinates
+y_circle2 = image_center_y2 + circle_radius2 * sin(theta2);  % Y coordinates
+
+% ------------------------ PID CONTROL PARAMETERS ------------------------
+
+% PID control parameters (adjusted for faster response)
+Kp_angle = 1.0;  % Proportional gain for angle
+Ki_angle = 0.02; % Integral gain for angle
+Kd_angle = 0;    % Derivative gain for angle
+
+Kp_distance = 0.8;  % Proportional gain for distance
+Ki_distance = 0.01; % Integral gain for distance
+Kd_distance = 0;    % Derivative gain for distance
+
+% Initialize PID control terms for robot 1 and robot 2
+prev_angle_error1 = 0; integral_angle1 = 0; prev_distance_error1 = 0; integral_distance1 = 0;
+prev_angle_error2 = 0; integral_angle2 = 0; prev_distance_error2 = 0; integral_distance2 = 0;
+
+% Set manual limits for output
+max_angular_velocity = 0.6;
+max_linear_velocity = 0.4;
+tolerance = 0.05;
+
+% Initialize figure for plotting both robots
+figure;
+hold on;
+plot(x_circle1, y_circle1, 'g--'); % Plot circle path for robot 1 in green dashed line
+plot(x_circle2, y_circle2, 'm--'); % Plot circle path for robot 2 in magenta dashed line
+robot1_plot = plot(0, 0, 'bo', 'MarkerSize', 8, 'MarkerFaceColor', 'b'); % Plot robot 1 in blue
+robot2_plot = plot(0, 0, 'co', 'MarkerSize', 8, 'MarkerFaceColor', 'c'); % Plot robot 2 in cyan
+goal1_plot = plot(0, 0, 'ro', 'MarkerSize', 8, 'MarkerFaceColor', 'r');  % Plot goal point for robot 1 in red
+goal2_plot = plot(0, 0, 'mo', 'MarkerSize', 8, 'MarkerFaceColor', 'm');  % Plot goal point for robot 2 in magenta
+xlabel('X [m]');
+ylabel('Y [m]');
+title('Robot Following Circular Paths');
+grid on;
+axis equal;
+
+% Main control loop
+goal_index1 = 1; goal_index2 = 1;
+rate = ros2rate(node, 20);  % 20 Hz control loop frequency
+
+while goal_index1 <= num_samples && goal_index2 <= num_samples
+    % ------------------------ ROBOT 1 CONTROL LOOP ------------------------
+    % Receive the current position and orientation from the odometry data for robot 1
+    odomMsg1 = receive(odomSub1, 10);
+    pose1 = odomMsg1.pose.pose;
+    x1 = double(pose1.position.x);
+    y1 = double(pose1.position.y);
+    quat1 = pose1.orientation;
+    angles1 = quat2eul([quat1.w, quat1.x, quat1.y, quat1.z]);
+    yaw1 = angles1(1);
+    
+    % Calculate the goal point (next point on the circle) for robot 1
+    goal_x1 = x_circle1(goal_index1);
+    goal_y1 = y_circle1(goal_index1);
+    
+    % Compute the error in position
+    inc_x1 = goal_x1 - x1;
+    inc_y1 = goal_y1 - y1;
+    distance_to_goal1 = sqrt(inc_x1^2 + inc_y1^2);
+    angle_to_goal1 = atan2(inc_y1, inc_x1);
+    
+    % PID control for angle (robot 1)
+    angle_error1 = angle_to_goal1 - yaw1;
+    angle_error1 = atan2(sin(angle_error1), cos(angle_error1));
+    integral_angle1 = integral_angle1 + angle_error1;
+    derivative_angle1 = angle_error1 - prev_angle_error1;
+    angular_velocity1 = Kp_angle * angle_error1 + Ki_angle * integral_angle1 + Kd_angle * derivative_angle1;
+    prev_angle_error1 = angle_error1;
+    angular_velocity1 = max(min(angular_velocity1, max_angular_velocity), -max_angular_velocity);
+    
+    % PID control for distance (robot 1)
+    if abs(angle_error1) < 0.2
+        distance_error1 = distance_to_goal1;
+        integral_distance1 = integral_distance1 + distance_error1;
+        derivative_distance1 = distance_error1 - prev_distance_error1;
+        linear_velocity1 = Kp_distance * distance_error1 + Ki_distance * integral_distance1 + Kd_distance * derivative_distance1;
+        prev_distance_error1 = distance_error1;
+    else
+        linear_velocity1 = 0;
+    end
+    linear_velocity1 = max(min(linear_velocity1, max_linear_velocity), -max_linear_velocity);
+    
+    % Set velocity message for robot 1
+    msg1.linear.x = linear_velocity1;
+    msg1.angular.z = angular_velocity1;
+    send(cmdVelPub1, msg1);
+    
+    % Update the plot for robot 1
+    set(robot1_plot, 'XData', x1, 'YData', y1);
+    set(goal1_plot, 'XData', goal_x1, 'YData', goal_y1);
+    
+    % Check if robot 1 reached the goal
+    if distance_to_goal1 < tolerance
+        goal_index1 = goal_index1 + 1;
+    end
+    
+    % ------------------------ ROBOT 2 CONTROL LOOP ------------------------
+    % Receive the current position and orientation from the odometry data for robot 2
+    odomMsg2 = receive(odomSub2, 10);
+    pose2 = odomMsg2.pose.pose;
+    x2 = double(pose2.position.x);
+    y2 = double(pose2.position.y);
+    quat2 = pose2.orientation;
+    angles2 = quat2eul([quat2.w, quat2.x, quat2.y, quat2.z]);
+    yaw2 = angles2(1);
+    
+    % Calculate the goal point (next point on the circle) for robot 2
+    goal_x2 = x_circle2(goal_index2);
+    goal_y2 = y_circle2(goal_index2);
+    
+    % Compute the error in position
+    inc_x2 = goal_x2 - x2;
+    inc_y2 = goal_y2 - y2;
+    distance_to_goal2 = sqrt(inc_x2^2 + inc_y2^2);
+    angle_to_goal2 = atan2(inc_y2, inc_x2);
+    
+    % PID control for angle (robot 2)
+    angle_error2 = angle_to_goal2 - yaw2;
+    angle_error2 = atan2(sin(angle_error2), cos(angle_error2));
+    integral_angle2 = integral_angle2 + angle_error2;
+    derivative_angle2 = angle_error2 - prev_angle_error2;
+    angular_velocity2 = Kp_angle * angle_error2 + Ki_angle * integral_angle2 + Kd_angle * derivative_angle2;
+    prev_angle_error2 = angle_error2;
+    angular_velocity2 = max(min(angular_velocity2, max_angular_velocity), -max_angular_velocity);
+    
+    % PID control for distance (robot 2)
+    if abs(angle_error2) < 0.2
+        distance_error2 = distance_to_goal2;
+        integral_distance2 = integral_distance2 + distance_error2;
+        derivative_distance2 = distance_error2 - prev_distance_error2;
+        linear_velocity2 = Kp_distance * distance_error2 + Ki_distance * integral_distance2 + Kd_distance * derivative_distance2;
+        prev_distance_error2 = distance_error2;
+    else
+        linear_velocity2 = 0;
+    end
+    linear_velocity2 = max(min(linear_velocity2, max_linear_velocity), -max_linear_velocity);
+    
+    % Set velocity message for robot 2
+    msg2.linear.x = linear_velocity2;
+    msg2.angular.z = angular_velocity2;
+    send(cmdVelPub2, msg2);
+    
+    % Update the plot for robot 2
+    set(robot2_plot, 'XData', x2, 'YData', y2);
+    set(goal2_plot, 'XData', goal_x2, 'YData', goal_y2);
+    
+    % Check if robot 2 reached the goal
+    if distance_to_goal2 < tolerance
+        goal_index2 = goal_index2 + 1;
+    end
+    
+    % Pause for the next loop iteration
+    drawnow;
+    waitfor(rate);
+end
+
+% Stop both robots after completing their paths
+msg1.linear.x = 0; msg1.angular.z = 0;
+send(cmdVelPub1, msg1);
+msg2.linear.x = 0; msg2.angular.z = 0;
+send(cmdVelPub2, msg2);
+disp('Both robots stopped. Path completed.');
+
+% Clean up: Clear nodes and publishers
+clear cmdVelPub1 cmdVelPub2 node;
+
+disp('Nodes and publishers cleared. Exiting.');

@@ -1,0 +1,23 @@
+[0.402s] Invoking command in '/home/gerardo/ros2_ws/src/aruco_orientation': PYTHONPATH=/home/gerardo/ros2_ws/src/build/aruco_orientation/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/gerardo/ros2_ws/src/install/aruco_orientation/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py egg_info --egg-base ../build/aruco_orientation build --build-base /home/gerardo/ros2_ws/src/build/aruco_orientation/build install --record /home/gerardo/ros2_ws/src/build/aruco_orientation/install.log --single-version-externally-managed
+[0.550s] running egg_info
+[0.551s] writing ../build/aruco_orientation/aruco_orientation.egg-info/PKG-INFO
+[0.551s] writing dependency_links to ../build/aruco_orientation/aruco_orientation.egg-info/dependency_links.txt
+[0.551s] writing entry points to ../build/aruco_orientation/aruco_orientation.egg-info/entry_points.txt
+[0.551s] writing requirements to ../build/aruco_orientation/aruco_orientation.egg-info/requires.txt
+[0.551s] writing top-level names to ../build/aruco_orientation/aruco_orientation.egg-info/top_level.txt
+[0.552s] reading manifest file '../build/aruco_orientation/aruco_orientation.egg-info/SOURCES.txt'
+[0.552s] writing manifest file '../build/aruco_orientation/aruco_orientation.egg-info/SOURCES.txt'
+[0.552s] running build
+[0.552s] running build_py
+[0.552s] copying aruco_orientation/odom_node.py -> /home/gerardo/ros2_ws/src/build/aruco_orientation/build/lib/aruco_orientation
+[0.553s] running install
+[0.553s] running install_lib
+[0.553s] copying /home/gerardo/ros2_ws/src/build/aruco_orientation/build/lib/aruco_orientation/odom_node.py -> /home/gerardo/ros2_ws/src/install/aruco_orientation/lib/python3.10/site-packages/aruco_orientation
+[0.554s] byte-compiling /home/gerardo/ros2_ws/src/install/aruco_orientation/lib/python3.10/site-packages/aruco_orientation/odom_node.py to odom_node.cpython-310.pyc
+[0.554s] running install_egg_info
+[0.555s] removing '/home/gerardo/ros2_ws/src/install/aruco_orientation/lib/python3.10/site-packages/aruco_orientation-0.0.0-py3.10.egg-info' (and everything under it)
+[0.555s] Copying ../build/aruco_orientation/aruco_orientation.egg-info to /home/gerardo/ros2_ws/src/install/aruco_orientation/lib/python3.10/site-packages/aruco_orientation-0.0.0-py3.10.egg-info
+[0.556s] running install_scripts
+[0.568s] Installing odom_node script to /home/gerardo/ros2_ws/src/install/aruco_orientation/lib/aruco_orientation
+[0.568s] writing list of installed files to '/home/gerardo/ros2_ws/src/build/aruco_orientation/install.log'
+[0.582s] Invoked command in '/home/gerardo/ros2_ws/src/aruco_orientation' returned '0': PYTHONPATH=/home/gerardo/ros2_ws/src/build/aruco_orientation/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/gerardo/ros2_ws/src/install/aruco_orientation/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated setup.py egg_info --egg-base ../build/aruco_orientation build --build-base /home/gerardo/ros2_ws/src/build/aruco_orientation/build install --record /home/gerardo/ros2_ws/src/build/aruco_orientation/install.log --single-version-externally-managed
